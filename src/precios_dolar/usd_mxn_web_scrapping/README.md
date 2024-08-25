@@ -1,0 +1,1 @@
+Web scraping of the mxn to usd prices from the site: https://www.eldolar.info/es-MX/mexico/dia/hoy
