@@ -1,7 +1,8 @@
--r rquirements.txt
+-r requirements.txt
 
 pylint==3.2.6
 mypy==1.11.2
 pytest==8.3.2
 types-requests==2.32.0.20240712
 types-beautifulsoup4==4.12.0.20240511
+pandas-stubs==2.2.2.240807

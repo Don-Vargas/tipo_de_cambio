@@ -1,6 +1,7 @@
 import requests
 import datetime
 from bs4 import BeautifulSoup
+import pandas as pd
 
 def download_data_dolar(url, current_date):
     '''
@@ -83,3 +84,138 @@ while current_date <= end_date:
     data.append(download_data_dolar( url + current_date.strftime('%Y%m%d'), current_date))
     # Increment the date by one day
     current_date += datetime.timedelta(days=1)
+
+def split_dict(data):
+    """
+    Splits a list of dictionaries into three separate dictionaries based on the presence of the keys 'compra', 'venta', and 'otro'.
+
+    Each dictionary in the input list is expected to have the following structure:
+    - A 'banco' key with the bank name as its value.
+    - A 'date' key with a datetime object representing the date.
+    - Optionally, one or more of the following keys: 'compra', 'venta', 'otro', each containing a value.
+
+    The function returns three dictionaries:
+    - `compra_dict`: Contains entries with the 'compra' key.
+    - `venta_dict`: Contains entries with the 'venta' key.
+    - `otro_dict`: Contains entries with the 'otro' key.
+
+    Args:
+        data (list of dict): List of dictionaries, where each dictionary contains data for a specific bank on a given date.
+
+    Returns:
+        tuple: A tuple containing three dictionaries:
+            - `compra_dict` (dict): Keys are bank names, and values are dictionaries with 'date' and 'compra' information.
+            - `venta_dict` (dict): Keys are bank names, and values are dictionaries with 'date' and 'venta' information.
+            - `otro_dict` (dict): Keys are bank names, and values are dictionaries with 'date' and 'otro' information.
+    """
+    
+    # Dictionaries to hold the separated data
+    compra_dict = {}  # Dictionary to store entries with 'compra' information
+    venta_dict = {}   # Dictionary to store entries with 'venta' information
+    otro_dict = {}    # Dictionary to store entries with 'otro' information
+    
+    # Iterate over the list of dictionaries (entries)
+    for entry in data:
+        banco = entry['banco']   # Extract the bank name from the entry
+        date = entry['date']     # Extract the date from the entry
+        
+        # Check if 'compra' key is present in the entry
+        if 'compra' in entry:
+            # Add to compra_dict with bank name as key
+            # The value is a dictionary containing 'date' and 'compra' value
+            compra_dict[banco] = {'date': date, 'compra': entry['compra']}
+        
+        # Check if 'venta' key is present in the entry
+        if 'venta' in entry:
+            # Add to venta_dict with bank name as key
+            # The value is a dictionary containing 'date' and 'venta' value
+            venta_dict[banco] = {'date': date, 'venta': entry['venta']}
+        
+        # Check if 'otro' key is present in the entry
+        if 'otro' in entry:
+            # Add to otro_dict with bank name as key
+            # The value is a dictionary containing 'date' and 'otro' value
+            otro_dict[banco] = {'date': date, 'otro': entry['otro']}
+    
+    # Return all three dictionaries
+    return compra_dict, venta_dict, otro_dict
+
+def dict_dataframe(data, status):
+    """
+    Converts a dictionary of bank data into a DataFrame for a specific status ('compra', 'venta', or 'otro').
+
+    The function assumes that the input dictionary contains bank data with dates and various statuses. It creates a DataFrame
+    where the index is the unique date and the columns are bank names with their respective values for the specified status.
+
+    Args:
+        data (dict): A dictionary where each key is a bank name and each value is another dictionary containing:
+                     - 'date': A datetime object representing the date.
+                     - Status keys ('compra', 'venta', 'otro'): Each holding corresponding data values.
+        status (str): The key in the inner dictionaries whose values should be included in the DataFrame (e.g., 'compra', 'venta', 'otro').
+
+    Returns:
+        pd.DataFrame: A DataFrame with the date as the index and bank names as columns, containing values for the specified status.
+    """
+    
+    # Extract unique dates from the data
+    dates = set(item['date'] for item in data.values())  # Extract unique dates from the 'date' field
+    date = list(dates)[0]  # Assuming there is only one unique date; take the first one from the list
+    
+    # Create a dictionary to hold the DataFrame data
+    data_for_df = {}
+    for bank, details in data.items():
+        # Add each bank's status value to the dictionary
+        data_for_df[bank] = details[status]
+    
+    # Create the DataFrame using the constructed dictionary and set the index to the unique date
+    df = pd.DataFrame(data_for_df, index=[date])
+    
+    # Set 'date' as the index name (removing the default name)
+    df.index.name = None
+    
+    return df
+
+def Unify_Dataframe(data):
+    """
+    Processes a list of dictionaries to create three DataFrames for 'compra', 'venta', and 'otro' statuses.
+
+    The function assumes each dictionary in the `data` list is a set of bank data entries. It utilizes helper functions `split_dict` and `dict_dataframe` to separate and organize data by status ('compra', 'venta', 'otro'). The results are concatenated into three distinct DataFrames.
+
+    Args:
+        data (list of dict): A list of dictionaries, where each dictionary contains bank data with a 'date' and potentially 'compra', 'venta', and 'otro' keys.
+
+    Returns:
+        tuple: A tuple containing three DataFrames:
+            - `dfc` (pd.DataFrame): DataFrame with 'compra' values, indexed by date.
+            - `dfv` (pd.DataFrame): DataFrame with 'venta' values, indexed by date.
+            - `dfo` (pd.DataFrame): DataFrame with 'otro' values, indexed by date.
+    """
+    
+    # Lists to collect DataFrames for each status
+    list_compra = []  # List to hold DataFrames with 'compra' data
+    list_venta = []   # List to hold DataFrames with 'venta' data
+    list_otro = []    # List to hold DataFrames with 'otro' data
+    
+    # Iterate over the list of data dictionaries
+    for x in data:
+        # Split the dictionary into separate dictionaries for 'compra', 'venta', and 'otro'
+        compra, venta, otro = split_dict(x)
+        
+        # Convert each dictionary to a DataFrame for the specified status
+        compra = dict_dataframe(compra, 'compra')
+        venta = dict_dataframe(venta, 'venta')
+        otro = dict_dataframe(otro, 'otro')
+    
+        # Append the resulting DataFrames to the respective lists
+        list_compra.append(compra) 
+        list_venta.append(venta) 
+        list_otro.append(otro) 
+    
+    # Concatenate all DataFrames in each list into a single DataFrame
+    dfc = pd.concat(list_compra)  # Combine all 'compra' DataFrames
+    dfv = pd.concat(list_venta)   # Combine all 'venta' DataFrames
+    dfo = pd.concat(list_otro)    # Combine all 'otro' DataFrames
+
+    return dfc, dfv, dfo
+
+dfc, dfv, dfo = Unify_Dataframe(data)
