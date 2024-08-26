@@ -67,24 +67,6 @@ def download_data_dolar(url, current_date):
     
     return result
 
-url = 'https://www.eldolar.info/es-MX/mexico/dia/'
-
-data = []
-
-start_date_str = '20140401'
-start_date = datetime.datetime.strptime(start_date_str, '%Y%m%d')
-
-# Get the current date and time
-end_date = datetime.datetime.now()
-
-# Print each date from the start date to the current date
-current_date = start_date
-while current_date <= end_date:
-    # Print the date in YYYY-MM-DD format
-    data.append(download_data_dolar( url + current_date.strftime('%Y%m%d'), current_date))
-    # Increment the date by one day
-    current_date += datetime.timedelta(days=1)
-
 def split_dict(data):
     """
     Splits a list of dictionaries into three separate dictionaries based on the presence of the keys 'compra', 'venta', and 'otro'.
@@ -217,5 +199,23 @@ def Unify_Dataframe(data):
     dfo = pd.concat(list_otro)    # Combine all 'otro' DataFrames
 
     return dfc, dfv, dfo
+
+url = 'https://www.eldolar.info/es-MX/mexico/dia/'
+
+data = []
+
+start_date_str = '20140401'
+start_date = datetime.datetime.strptime(start_date_str, '%Y%m%d')
+
+# Get the current date and time
+end_date = datetime.datetime.now()
+
+# Print each date from the start date to the current date
+current_date = start_date
+while current_date <= end_date:
+    # Print the date in YYYY-MM-DD format
+    data.append(download_data_dolar( url + current_date.strftime('%Y%m%d'), current_date))
+    # Increment the date by one day
+    current_date += datetime.timedelta(days=1)
 
 dfc, dfv, dfo = Unify_Dataframe(data)
