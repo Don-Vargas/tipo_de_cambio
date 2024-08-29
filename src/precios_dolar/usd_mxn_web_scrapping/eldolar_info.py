@@ -215,6 +215,8 @@ current_date = start_date
 while current_date <= end_date:
     # Print the date in YYYY-MM-DD format
     data.append(download_data_dolar( url + current_date.strftime('%Y%m%d'), current_date))
+    # Remove empty lists []
+    data = [d for d in data if d]
     # Increment the date by one day
     current_date += datetime.timedelta(days=1)
 
